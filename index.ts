@@ -1,7 +1,7 @@
 import {Lightclient, LightclientEvent} from "@lodestar/light-client";
 import {ssz} from "@lodestar/types";
 import {chainConfig} from "./config.js";  // for some reason this needs to be .js
-import {createIChainForkConfig} from "@lodestar/config";
+import {createIChainForkConfig, createIBeaconConfig} from "@lodestar/config";
 import {DOMAIN_SYNC_COMMITTEE} from "@chainsafe/lodestar-params";
 import type {PublicKey, Signature} from "@chainsafe/bls/types";
 import bls from "@chainsafe/bls";
@@ -17,15 +17,16 @@ async function main() {
     // aggregation();
     // verification();
 
-    // const genesisValidatorsRootVal = fromHex("0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95");
-
     // get the values to init the light-client
-    const config = createIChainForkConfig(chainConfig);
-    // const config = createIBeaconConfig(chainConfig, genesisValidatorsRootVal);
+    // const config = createIChainForkConfig(chainConfig);
+    const genesisValidatorsRootVal = fromHex("0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95");
+    const config = createIBeaconConfig(chainConfig, genesisValidatorsRootVal);
+
+
     const beaconApiUrl = "https://lodestar-mainnet.chainsafe.io";
     const genesisData = {
         genesisTime: 1606824023,
-        genesisValidatorsRoot: "0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95"
+        genesisValidatorsRoot: genesisValidatorsRootVal
     }
     const client = await Lightclient.initializeFromCheckpointRoot({
         config,
@@ -35,23 +36,24 @@ async function main() {
         checkpointRoot: fromHex("428192ee7dc9d5724851ce07d76190c162eff6b747d2dfab991bf7db54b9994f")
     });
 
-    // start the client
-    client.start();
+    assertValidHeader(config);
 
-    // emit on change of header
-    client.emitter.on(LightclientEvent.head, (header) => {
-        console.log("New Header:")//, header)
-        // writeFileSync(join("data", "header.json"), JSON.stringify(header));
-        assertValidHeader();
-    });
+    // // start the client
+    // client.start();
+    //
+    // // emit on change of header
+    // client.emitter.on(LightclientEvent.head, (header) => {
+    //     console.log("New Header:")//, header)
+    //     // writeFileSync(join("data", "header.json"), JSON.stringify(header));
+    // });
 }
 
-function assertValidHeader() {
+function assertValidHeader(config: any) {
     const bodyRoot = new Uint8Array(header_data.bodyRoot);
 
     const signingRoot = ssz.phase0.SigningData.hashTreeRoot({
         objectRoot: bodyRoot,
-        domain: DOMAIN_SYNC_COMMITTEE
+        domain: config.getDomain(header_data.slot, DOMAIN_SYNC_COMMITTEE)
     });
 
     const pubkeys = bootstrap.data.current_sync_committee.pubkeys.map(p => bls.PublicKey.fromBytes(fromHex(p)));
@@ -62,32 +64,32 @@ function assertValidHeader() {
     console.log("IS A VALID AGGREGATE? -> " + isValidBlsAggregate(pubkeys, signingRoot, fromHex(header_data.signature_sync)));
 }
 
-async function assertValidSignedHeaderLocal(
-    sig: string,
-    pubkeys: string[],
-    header: any
-) {
-    // const participantPubkeys = getParticipantPubkeys(syncCommittee.pubkeys, syncAggregate.syncCommitteeBits);
-    // TODO: check that they are not using _just_ the pubkeys with a bit == 1 in the aggregation.
-
-    const participantPubkeys: PublicKey[] = pubkeys.map(p => bls.PublicKey.fromBytes(fromHex(p)));
-    const syncCommitteeSignature: Uint8Array = fromHex(sig);
-    const signedHeaderRoot: Uint8Array = header.bodyRoot;
-
-    const signingRoot = ssz.phase0.SigningData.hashTreeRoot({
-        objectRoot: signedHeaderRoot,
-        domain: DOMAIN_SYNC_COMMITTEE
-    });
-
-    const isValid = isValidBlsAggregate(participantPubkeys, signingRoot, syncCommitteeSignature);
-    if (!isValid) {
-        throw Error("Invalid aggregate signature");
-    } else {
-        console.log("correct");
-    }
-
-    return isValid
-}
+// async function assertValidSignedHeaderLocal(
+//     sig: string,
+//     pubkeys: string[],
+//     header: any
+// ) {
+//     // const participantPubkeys = getParticipantPubkeys(syncCommittee.pubkeys, syncAggregate.syncCommitteeBits);
+//     // TODO: check that they are not using _just_ the pubkeys with a bit == 1 in the aggregation.
+//
+//     const participantPubkeys: PublicKey[] = pubkeys.map(p => bls.PublicKey.fromBytes(fromHex(p)));
+//     const syncCommitteeSignature: Uint8Array = fromHex(sig);
+//     const signedHeaderRoot: Uint8Array = header.bodyRoot;
+//
+//     const signingRoot = ssz.phase0.SigningData.hashTreeRoot({
+//         objectRoot: signedHeaderRoot,
+//         domain: config.getDomain(header_data.slot, DOMAIN_SYNC_COMMITTEE),
+//     });
+//
+//     const isValid = isValidBlsAggregate(participantPubkeys, signingRoot, syncCommitteeSignature);
+//     if (!isValid) {
+//         throw Error("Invalid aggregate signature");
+//     } else {
+//         console.log("correct");
+//     }
+//
+//     return isValid
+// }
 
 
 function isValidBlsAggregate(publicKeys: PublicKey[], message: Uint8Array, signature: Uint8Array) {
