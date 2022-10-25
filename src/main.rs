@@ -1,6 +1,11 @@
-mod lib;
+use crate::validation::verifs::Verification;
+
+mod validation;
 
 fn main() {
-    lib::myfunc();
+    let a = Verification {
+        name: Some("p".to_string()),
+        project: Some("n".to_string()),
+    };
+    println!("{:?}", a);
 }
-
