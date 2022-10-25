@@ -1,31 +1,17 @@
 {
-  "slot": 4982863,
-  "root": "0xe018b9181628a2ad679c0553f0d9222165bc4a441bf7b25ef56a551d4e066d8f",
-  "proposerIndex": 71108,
-  "parentRoot": [
-    244, 237,   6,  88, 168, 146, 149, 243,
-    227, 227,  71, 224,  11, 109, 179, 226,
-     55, 154, 241,  78,  13, 140, 223, 209,
-    140, 153,  86, 208,   6,  52, 211,  53
-  ],
-  "stateRoot": [
-     50, 188, 155, 168,  91, 207,  43,  21,
-    254, 113,  27,  10, 109, 140, 239, 227,
-    126, 227, 232,  57, 129,  38,  96,  91,
-     52,   0, 235,  62,  18,  11,  70, 132
-  ],
-  "bodyRoot": [
-     98,  37, 235, 150, 219, 219,  51,  28,
-    180, 128,  94,  64, 219, 160, 189, 115,
-    242, 223,  87, 152,  99,  29, 236,  96,
-    194,  91,  28,  97,  44, 211,  53, 174
-  ],
-  "ssz_cached_permanent_root": [
-    224,  24, 185, 24,  22,  40, 162, 173,
-    103, 156,   5, 83, 240, 217,  34,  33,
-    101, 188,  74, 68,  27, 247, 178,  94,
-    245, 106,  85, 29,  78,   6, 109, 143
-  ],
-  "signature_sync": "0xa80f88a5b82ae0aa95e77863e010059a4c5b2b5dfb105f8c7a40921bd94ab4524f6f897a43beb7cf4d678eef164c81a2108edfff16ee0342a7f9a737afc1f5789e157bb16d1ffe3cda94c1d2c69442459897ba26cc7385a9b2d0ee1a81b5b448",
-  "signature": "0xb8a368fb1cb291777c229cb25180da01fac281bd5731c6ad05e518f79a50580508735a398882cbe7741b2fbfbb40e57c03ec5479512ba4fdf25378e68540c079b1b5018d1dafe0cb7f45edcfb9bd162330a344f8121631a2370c61ba03f6ad10"
+  "data": {
+    "root": "0x5d0800c9d41af65a356311aec8664a33efa9d28a58675396897fdb397da9dbfe",
+    "canonical": true,
+    "header": {
+      "message": {
+        "slot": "4890367",
+        "proposer_index": "303394",
+        "parent_root": "0xc4a0cfdeea1856e7928aa54c5e4ee9dad3c33f821b2dba5d3ff7d4b2dc927ad0",
+        "state_root": "0xf2a0f86b8a8571f776bab32fd97861e1b799b5185336dec6394e060f121102e5",
+        "body_root": "0x4ae8baa860ef14f2ba620329d40ea50a98034bb05b2caa999f71ca1686a81f82"
+      },
+      "signature": "0x8d09985850dfb3fcfa670020965144052d161932be2ffb81691f0a0c318a3b0f155cb5e3e7fc442489acfa165b4216030463d88c5f3e6cee3f0b92811b8ffbdadc16f4125ac88e8c8bf90b4c4c232ebc3ecc048419251298eb26e4fef7bbb25b"
+    }
+  },
+  "execution_optimistic": false
 }

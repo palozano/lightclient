@@ -1,34 +1,28 @@
-// use crate::validation::verifs::Verification;
-// mod validation;
-mod verification;
+use blst::min_pk::PublicKey;
 
-// use blst::min_pk::*;
-use blst::min_pk::SecretKey;
-use blst::BLST_ERROR;
-use rand::{thread_rng, RngCore};
+// mod validation;
+mod utils;
+// mod verification;
 
 fn main() {
-    // let a = Verification {
-    //     name: Some("p".to_string()),
-    //     project: Some("n".to_string()),
-    // };
-    //
-    // println!("{:?}", a);
-    // let a = verification::Thing::new(10f32, 10f32);
-    // println!("{:?}", a);
+    // Minimal working example of public key signature from the docs
+    // verification::minimal_example();
 
-    let mut rng = thread_rng();
-    let mut ikm = [0u8; 32];
-    rng.fill_bytes(&mut ikm);
+    // Read the data
+    let keys = utils::read_keys();
 
-    let sk = SecretKey::key_gen(&ikm, &[]).unwrap();
-    let pk = sk.sk_to_pk();
+    // Clean the values
+    let cleaned_values = utils::clean_keys(keys);
 
-    let dst = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_";
-    let msg = b"blst is such a blast";
-    let sig = sk.sign(msg, dst, &[]);
+    // Obtain the byte array of each key
+    let byted_keys = utils::hex_to_bytes(cleaned_values);
 
-    let err = sig.verify(false, msg, dst, &[], &pk, false);
-    println!("{:?}", err);
-    assert_eq!(err, BLST_ERROR::BLST_SUCCESS);
+    // Transform the bytes to public keys
+    let pks = utils::bytes_to_public_keys(byted_keys);
+
+    println!("{:?}", pks);
+    // println!("{:?}", serde_json::to_string_pretty(&pks).unwrap());
+
+    let agg_pk = utils::aggregate_public_keys(pks);
+    println!("{:?}", agg_pk);
 }
