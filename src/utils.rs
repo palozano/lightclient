@@ -54,17 +54,12 @@ pub fn bytes_to_public_keys(values: Vec<Vec<u8>>) -> Vec<PublicKey> {
 }
 
 pub fn aggregate_public_keys(pkeys: Vec<PublicKey>) -> AggregatePublicKey {
-    // let pkeys_ref = &pkeys[..];
     // temporay vector for easy conversion
-    let tmp: Vec<&PublicKey> = pkeys.iter().map(|pk| &pk).collect();
+    let tmp: Vec<&PublicKey> = pkeys.iter().map(|pk| pk).collect();
     let pkeys_ref = &tmp[..];
 
     // from https://github.com/supranational/blst/blob/master/bindings/rust/src/lib.rs#L1006
     let agg_pk = AggregatePublicKey::aggregate(pkeys_ref, true);
-    let agg_pk2 = AggregatePublicKey::aggregate(pkeys_ref, false);
-
-    println!("{:?}", agg_pk);
-    // let pk = agg_pk.to_public_key();
 
     agg_pk.unwrap()
 }
