@@ -16,6 +16,6 @@
   },
   "devDependencies": {
     "@babel/helper-compilation-targets": "^7.19.3",
-    "@types/node": "^18.11.3"
+    "@types/node": "^18.11.6"
   }
 }

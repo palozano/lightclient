@@ -1,17 +1,19 @@
-import {Lightclient, LightclientEvent} from "@lodestar/light-client";
-import {ssz} from "@lodestar/types";
-import {chainConfig} from "./config.js";  // for some reason this needs to be .js
-import {createIChainForkConfig, createIBeaconConfig} from "@lodestar/config";
-import {DOMAIN_SYNC_COMMITTEE} from "@chainsafe/lodestar-params";
-import type {PublicKey, Signature} from "@chainsafe/bls/types";
+import { Lightclient, LightclientEvent } from "@lodestar/light-client";
+import { ssz } from "@lodestar/types";
+import { chainConfig } from "./config.js";  // for some reason this needs to be .js
+import { createIChainForkConfig, createIBeaconConfig } from "@lodestar/config";
+import { DOMAIN_SYNC_COMMITTEE } from "@chainsafe/lodestar-params";
+import type { PublicKey, Signature } from "@chainsafe/bls/types";
 import bls from "@chainsafe/bls";
+import { getClient } from "@lodestar/api";
+import { config as configDefault } from "@lodestar/config/default";
 
-import header_data from "./data/header.json" assert {type: "json"};
-import bootstrap from "./data/bootstrap.json" assert {type: "json"};
+// import header_data from "./data/header.json" assert {type: "json"};
+// import bootstrap from "./data/bootstrap.json" assert {type: "json"};
 
 
-async function main() {
-
+const main = async () => {
+    console.log("Starting Client...")
     // test previous functionality
     // TODO: fix imports so they can come from other files
     // aggregation();
@@ -19,49 +21,64 @@ async function main() {
 
     // get the values to init the light-client
     // const config = createIChainForkConfig(chainConfig);
-    const genesisValidatorsRootVal = fromHex("0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95");
+    const genesisValidatorsRootVal = fromHex("0x89614fe0b212b360baa4ef38cf4bea6852f1e15d523f84641f8f0ca7024e7e88");
     const config = createIBeaconConfig(chainConfig, genesisValidatorsRootVal);
 
-
-    const beaconApiUrl = "https://lodestar-mainnet.chainsafe.io";
+    // https://eth-mainnet.gateway.pokt.network/v1/5f3453978e354ab992c4da79
+    // https://lodestar-goerli.chainsafe.io
+    // https://eth-mainnet.g.alchemy.com/v2/BItoYgjJRs22CCf8I6zj1kUkmx6f9VZP 
+    const beaconApiUrl = "https://rpc.flashbots.net/";
     const genesisData = {
         genesisTime: 1606824023,
         genesisValidatorsRoot: genesisValidatorsRootVal
     }
+
+    const finalCheckpoint = await finalizedCheckpoint(beaconApiUrl);
+    console.log("Checkpoint:", finalCheckpoint.root)
+
     const client = await Lightclient.initializeFromCheckpointRoot({
         config,
         logger: undefined,
         beaconApiUrl,
         genesisData,
-        checkpointRoot: fromHex("428192ee7dc9d5724851ce07d76190c162eff6b747d2dfab991bf7db54b9994f")
+        // the one that changes every (approx.) 27h
+        checkpointRoot: finalCheckpoint.root
     });
 
-    assertValidHeader(config);
+    // start the client
+    client.start();
+    console.log("Started Client")
 
-    // // start the client
-    // client.start();
-    //
-    // // emit on change of header
-    // client.emitter.on(LightclientEvent.head, (header) => {
-    //     console.log("New Header:")//, header)
-    //     // writeFileSync(join("data", "header.json"), JSON.stringify(header));
-    // });
+    // emit on change of header
+    client.emitter.on(LightclientEvent.head, (header) => {
+        console.log("New Header:", header)
+        // writeFileSync(join("data", "header.json"), JSON.stringify(header));
+    });
 }
 
+
+async function finalizedCheckpoint(beaconApiUrl: string) {
+    const pre_client = getClient({ baseUrl: beaconApiUrl }, { config: configDefault });
+    const res = await pre_client.beacon.getStateFinalityCheckpoints("head");
+    const finalizedCheckpoint = res.data.finalized;
+    return finalizedCheckpoint
+}
+
+
 function assertValidHeader(config: any) {
-    const bodyRoot = new Uint8Array(header_data.bodyRoot);
+    // const bodyRoot = new Uint8Array(header_data.bodyRoot);
 
-    const signingRoot = ssz.phase0.SigningData.hashTreeRoot({
-        objectRoot: bodyRoot,
-        domain: config.getDomain(header_data.slot, DOMAIN_SYNC_COMMITTEE)
-    });
+    // const signingRoot = ssz.phase0.SigningData.hashTreeRoot({
+    //     objectRoot: bodyRoot,
+    //     domain: config.getDomain(header_data.slot, DOMAIN_SYNC_COMMITTEE)
+    // });
 
-    const pubkeys = bootstrap.data.current_sync_committee.pubkeys.map(p => bls.PublicKey.fromBytes(fromHex(p)));
+    // const pubkeys = bootstrap.data.current_sync_committee.pubkeys.map(p => bls.PublicKey.fromBytes(fromHex(p)));
 
-    // I get this value from beaconcha.in, so I can get the signature values,
-    // because in the finality request, I cannot specify the slot number.
-    console.log("IS A VALID AGGREGATE? -> " + isValidBlsAggregate(pubkeys, signingRoot, fromHex(header_data.signature)));
-    console.log("IS A VALID AGGREGATE? -> " + isValidBlsAggregate(pubkeys, signingRoot, fromHex(header_data.signature_sync)));
+    // // I get this value from beaconcha.in, so I can get the signature values,
+    // // because in the finality request, I cannot specify the slot number.
+    // console.log("IS A VALID AGGREGATE? -> " + isValidBlsAggregate(pubkeys, signingRoot, fromHex(header_data.signature)));
+    // console.log("IS A VALID AGGREGATE? -> " + isValidBlsAggregate(pubkeys, signingRoot, fromHex(header_data.signature_sync)));
 }
 
 // async function assertValidSignedHeaderLocal(
@@ -92,31 +109,31 @@ function assertValidHeader(config: any) {
 // }
 
 
-function isValidBlsAggregate(publicKeys: PublicKey[], message: Uint8Array, signature: Uint8Array) {
+// function isValidBlsAggregate(publicKeys: PublicKey[], message: Uint8Array, signature: Uint8Array) {
 
-    let aggPubkey: PublicKey;
-    try {
-        aggPubkey = bls.PublicKey.aggregate(publicKeys);
-    } catch (e) {
-        (e as Error).message = `Error aggregating pubkeys: ${(e as Error).message}`;
-        throw e;
-    }
+//     let aggPubkey: PublicKey;
+//     try {
+//         aggPubkey = bls.PublicKey.aggregate(publicKeys);
+//     } catch (e) {
+//         (e as Error).message = `Error aggregating pubkeys: ${(e as Error).message}`;
+//         throw e;
+//     }
 
-    let sig: Signature;
-    try {
-        sig = bls.Signature.fromBytes(signature, undefined, true);
-    } catch (e) {
-        (e as Error).message = `Error deserializing signature: ${(e as Error).message}`;
-        throw e;
-    }
+//     let sig: Signature;
+//     try {
+//         sig = bls.Signature.fromBytes(signature, undefined, true);
+//     } catch (e) {
+//         (e as Error).message = `Error deserializing signature: ${(e as Error).message}`;
+//         throw e;
+//     }
 
-    try {
-        return sig.verify(aggPubkey, message);
-    } catch (e) {
-        (e as Error).message = `Error verifying signature: ${(e as Error).message}`;
-        throw e;
-    }
-}
+//     try {
+//         return sig.verify(aggPubkey, message);
+//     } catch (e) {
+//         (e as Error).message = `Error verifying signature: ${(e as Error).message}`;
+//         throw e;
+//     }
+// }
 
 // getDomain(stateSlot: Slot, domainType: DomainType, messageSlot ?: Slot): Uint8Array {
 //     // ```py

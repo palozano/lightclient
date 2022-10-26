@@ -3,18 +3,15 @@ use hex;
 use serde::{Deserialize, Serialize};
 use std::fs;
 
-// TODO: Refactor this to work with the bootstrap value from the server (see previous_data)
+// TODO: Refactor to work with the bootstrap value from the server (see `previous_data` folder)
+
+/// Structure of the incoming data.
 #[derive(Serialize, Deserialize)]
 struct PubKeyData {
     pub_keys: Vec<String>,
     aggregate_pubkey: String,
 }
 
-// From the docs, this example:
-//
-// let json: serde_json::Value = serde_json::from_str(the_file).expect("JSON was not well-formatted.");
-//
-// This could help with the refactor above.
 pub fn read_keys() -> Vec<String> {
     let the_file = fs::File::open("data/pubkeys.json").expect("File should open read only.");
     let json: PubKeyData = serde_json::from_reader(the_file)
@@ -42,19 +39,10 @@ pub fn bytes_to_public_keys(values: Vec<Vec<u8>>) -> Vec<PublicKey> {
         .map(|pk| PublicKey::from_bytes(pk).expect("Failed to create the public key from bytes"))
         .collect();
 
-    // Iterative implementation
-    // let mut pkeys: Vec<PublicKey> = Vec::with_capacity(values.len());
-    // for i in 0..values.len() {
-    //     let pkey =
-    //         PublicKey::from_bytes(&values[i]).expect("Failed to create the public key from bytes");
-    //     pkeys[i] = pkey;
-    // }
-
     pkeys
 }
 
 pub fn aggregate_public_keys(pkeys: Vec<PublicKey>) -> AggregatePublicKey {
-    // temporay vector for easy conversion
     let tmp: Vec<&PublicKey> = pkeys.iter().map(|pk| pk).collect();
     let pkeys_ref = &tmp[..];
 
@@ -62,4 +50,8 @@ pub fn aggregate_public_keys(pkeys: Vec<PublicKey>) -> AggregatePublicKey {
     let agg_pk = AggregatePublicKey::aggregate(pkeys_ref, true);
 
     agg_pk.unwrap()
+}
+
+fn verify_agg_key(pkey: PublicKey) -> bool {
+    true
 }

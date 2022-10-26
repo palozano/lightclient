@@ -1,10 +1,17 @@
 {
   "compilerOptions": {
-    "target": "es2019",
-    "module": "esnext",
+    "target": "ES2019", // ESNext
+    "module": "ESNext", // CommonJS
     "moduleResolution": "node",
     "pretty": true,
-    "lib": ["es2020", "esnext.bigint", "es2020.string", "es2020.symbol.wellknown"],
+    "lib": [
+      "ES5",
+      "ES6",
+      // "es2020",
+      // "esnext.bigint",
+      // "es2020.string",
+      // "es2020.symbol.wellknown"
+    ],
     "outDir": "dist",
     "allowSyntheticDefaultImports": true, // (C)
     "strict": true,
@@ -17,13 +24,11 @@
     "noImplicitAny": true,
     "noImplicitThis": true,
     "noImplicitReturns": true,
-
     "esModuleInterop": true,
     "declaration": true,
     "declarationMap": true,
     "incremental": true,
     "preserveWatchOutput": true,
-
     "resolveJsonModule": true,
   }
 }
