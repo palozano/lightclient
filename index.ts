@@ -21,13 +21,17 @@ const main = async () => {
 
     // get the values to init the light-client
     // const config = createIChainForkConfig(chainConfig);
-    const genesisValidatorsRootVal = fromHex("0x89614fe0b212b360baa4ef38cf4bea6852f1e15d523f84641f8f0ca7024e7e88");
+
+    // const genesisValidatorsRootVal = fromHex("0x89614fe0b212b360baa4ef38cf4bea6852f1e15d523f84641f8f0ca7024e7e88");
+    const genesisValidatorsRootVal = fromHex("0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95");
+
     const config = createIBeaconConfig(chainConfig, genesisValidatorsRootVal);
 
     // https://eth-mainnet.gateway.pokt.network/v1/5f3453978e354ab992c4da79
     // https://lodestar-goerli.chainsafe.io
+    // https://lodestar-mainnet.chainsafe.io
     // https://eth-mainnet.g.alchemy.com/v2/BItoYgjJRs22CCf8I6zj1kUkmx6f9VZP 
-    const beaconApiUrl = "https://rpc.flashbots.net/";
+    const beaconApiUrl = "https://lodestar-mainnet.chainsafe.io";
     const genesisData = {
         genesisTime: 1606824023,
         genesisValidatorsRoot: genesisValidatorsRootVal
