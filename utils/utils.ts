@@ -1,5 +1,5 @@
-import {writeFileSync} from 'fs';
-import {join} from 'path';
+import { writeFileSync } from 'fs';
+import { join } from 'path';
 
 interface BaseSerializable {
     serialize(): Uint8Array;
@@ -24,11 +24,16 @@ function toHexNoPrefix(bytes: Bufferish): string {
 //     expect(toHexNoPrefix(value)).to.equal(toHexNoPrefix(expected));
 // }
 
+/**
+ * Converts a hex string to an array of bytes.
+ *
+ * @param hexString {string} - Input value as a hexadecimal number in string format
+ * @returns {Uint8Array} Array of unsigned integers
+ */
 export function fromHex(hexString: string): Uint8Array {
-    if (hexString.startsWith("0x")) hexString = hexString.slice(2);
+    hexString = hexString.startsWith("0x") ? hexString.slice(2) : hexString;
     return Buffer.from(hexString, "hex");
 }
-
 
 export async function getData() {
     const axios = require('axios').default;
@@ -56,17 +61,17 @@ export async function queryData() {
     ];
 
     const finality = await axios.get(urls[0][1]).catch((err: any) => {
-            console.log(err)
-        });
+        console.log(err)
+    });
     console.log(finality);
     writeFileSync(join("data", urls[0][0]), JSON.stringify(finality));
     const slot: string = finality.data.finalized_header.slot;
     // TODO: you should go to beaconcha.in first to get the block hash
     const bootstrapURL = urls[1][1] + slot;
     // const bootstrapURL_good = urls[1][1] + block_hash;
-    const bootstrap =  await axios.get(bootstrapURL).catch((err: any) => {
-            console.log(err)
-        });
+    const bootstrap = await axios.get(bootstrapURL).catch((err: any) => {
+        console.log(err)
+    });
     console.log(finality);
 
     writeFileSync(join("data", urls[1][0]), JSON.stringify(bootstrap));
