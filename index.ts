@@ -20,19 +20,15 @@ import axios from "axios";
 
 async function main() {
     console.log("⏳ Starting client...")
-
-    // this one doesn't work
-    // 0x89614fe0b212b360baa4ef38cf4bea6852f1e15d523f84641f8f0ca7024e7e88"
-    // but this one works. why? I don't know
-    const genesisValidatorsRootVal = fromHexString("0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95");
-
-    const config = createIBeaconConfig(chainConfig, genesisValidatorsRootVal);
-
+    
     const beaconApiUrl = "https://lodestar-mainnet.chainsafe.io";
+    const genesisValidatorsRootVal = await getGenesisValidatorRoot(beaconApiUrl);
     const genesisData = {
         genesisTime: 1606824023,
         genesisValidatorsRoot: genesisValidatorsRootVal
     }
+
+    const config = createIBeaconConfig(chainConfig, genesisValidatorsRootVal);
 
     const finalCheckpoint = await finalizedCheckpoint(beaconApiUrl);
     console.log("🌓 Checkpoint:", toHexString(finalCheckpoint.root));
@@ -62,7 +58,7 @@ async function main() {
 
 
 /**
- * Helper function to get the latest checkpoint.
+ * Helper function to get the latest checkpoint
  * 
  * @param beaconApiUrl {string} - URL to connect to.
  * @returns {ValueOfFields<{
@@ -77,6 +73,17 @@ async function finalizedCheckpoint(beaconApiUrl: string) {
     return finalizedCheckpoint
 }
 
+/**
+ * Helper function to get tgenesis validator root.
+ * 
+ * @param beaconApiUrl {string} - URL to connect to.
+ * @returns U8a - The root
+ */
+async function getGenesisValidatorRoot(beaconApiUrl: string) {
+    const pre_client = getClient({ baseUrl: beaconApiUrl }, { config: configDefault });
+    return (await pre_client.beacon.getGenesis()).data.genesisValidatorsRoot
+}
+
 
 /**
  * Asserts if a header is valid based on the information from the header and
@@ -89,25 +96,29 @@ async function finalizedCheckpoint(beaconApiUrl: string) {
 async function assertValidHeader(header_data: any, config: IBeaconConfig) {
 
     const bodyRoot = new Uint8Array(header_data.bodyRoot);
+    const {headerRoot, sig} = await getHeader(header_data.slot)
 
     const signingRoot = ssz.phase0.SigningData.hashTreeRoot({
-        objectRoot: bodyRoot,
+        objectRoot: headerRoot,
         domain: config.getDomain(header_data.slot, DOMAIN_SYNC_COMMITTEE)
     });
 
-    const pubkeys: string[] = await getPublickeys(header_data.bodyRoot);
-    // console.log("🔑🔑🔑 Pubkeys:", pubkeys);
+    console.log("Signing Root:", signingRoot)
 
-    // aggregate the keys
-    const aggkey = aggregation(pubkeys);
-    console.log("🤲 🗝 Aggregate key:", toHexString(aggkey));
 
-    // const sig = bls.Signature.fromBytes(signingRoot, undefined, true);
-    const sig = bls.Signature.fromBytes(bodyRoot, undefined, true);
-    console.log("🎨 Signature:", sig);
+    // const pubkeys: string[] = await getPublickeys(headerRoot);
+    // // console.log("🔑🔑🔑 Pubkeys:", pubkeys);
 
-    // @ts-ignore
-    return sig.verify(aggkey, signingRoot);
+    // // aggregate the keys
+    // const aggkey = aggregation(pubkeys);
+    // console.log("🤲 🗝 Aggregate key:", toHexString(aggkey));
+
+    // // const sig = bls.Signature.fromBytes(signingRoot, undefined, true);
+    // const signature = bls.Signature.fromHex(sig);
+    // console.log("🎨 Signature:", signature);
+
+    // // @ts-ignore
+    // return signature.verify(aggkey, signingRoot);
 }
 
 /**
@@ -116,14 +127,15 @@ async function assertValidHeader(header_data: any, config: IBeaconConfig) {
  * @param bodyRoot {string} - The root of the header to get the bootstrap response form the endpoint.
  * @returns array of public keys from the response.
  */
-async function getPublickeys(bodyRoot: string) {
-    // const axios = require('axios').default;
-    const hexBodyRoot = "0x80647902a9ec0de3acefb0f7dd9ed39d212d4ebd616032fc8742743334d18dfd";//toHex(bodyRoot);
-    const pk_endpoint = `https://lodestar-mainnet.chainsafe.io/eth/v1/beacon/light_client/bootstrap/${hexBodyRoot}`
+async function getPublickeys(blockRoot: string) {
 
-    let response_data;
+    const pkEndpoint = `https://lodestar-mainnet.chainsafe.io/eth/v1/beacon/light_client/bootstrap/${blockRoot}`
+
+    let responseData;
     try {
-        response_data = await axios.get(pk_endpoint).then(res => res.data);
+        responseData = await axios.get(pkEndpoint).then(res => res.data);
+
+        console.log("Bootstrap:", responseData)
     } catch (e) {
         (e as Error).message = `Error getting the public keys: ${(e as Error).message}`;
         throw e;
@@ -131,14 +143,14 @@ async function getPublickeys(bodyRoot: string) {
 
     try {
         const filePath = join("data", "pubkeys.json");
-        // writeFileSync(filePath, JSON.stringify(d));
+        writeFileSync(filePath, JSON.stringify(responseData));
         console.log(`✍️ Storing data to '${filePath}'`)
     } catch (e) {
         (e as Error).message = `Error writing the public keys to file: ${(e as Error).message}`;
         throw e;
     }
 
-    return response_data.data.current_sync_committee.pubkeys;
+    return responseData.data.current_sync_committee.pubkeys;
 }
 
 /**
@@ -154,6 +166,15 @@ function aggregation(pubkeys: string[]) {
     );
     const agg = bls.aggregatePublicKeys(pkeys_uint8array);
     return agg;
+}
+
+async function getHeader(slot: number): Promise<any> {
+    const endpoint = `https://lodestar-mainnet.chainsafe.io/eth/v1/beacon/headers?slot=${slot}`
+    const responseData = await axios.get(endpoint).then(res => res.data).catch(err => console.log(err))
+    return {
+        headerRoot: responseData.data[0].root, 
+        sig: responseData.data[0].header.signature
+    } 
 }
 
 
